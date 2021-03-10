@@ -1,0 +1,34 @@
+version: '3.8'
+
+# This file is just an example on how another service should be served through traefik.
+services:
+  whoami:
+    image: "traefik/whoami"
+    labels:
+      # This enables the traefik proxy, otherwise the main container doesn't even flinch.
+      - "traefik.enable=true"
+      # As default, traefik serves the service to the first EXPOSED port in the container, this below overrides that port.
+      # - "traefik.http.services.bitwarden.loadbalancer.server.port=8080"
+      # This gets a bit messy, for a simple reason, first define the HTTP entrypoint, this entrypont will have a middleware that
+      # automatically redirects to the later defined HTTPS entrypoint.
+      - "traefik.http.routers.whoami.rule=Host(`tbaile.ddns.net`)"
+      - "traefik.http.routers.whoami.entrypoints=web"
+      - "traefik.http.routers.whoami.middlewares=whoami-https"
+      - "traefik.http.middlewares.whoami-https.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.whoami-https.redirectscheme.permanent=true"
+      # Here's the definition for the HTTPS part read carefully below for the letsencrypt part.
+      - "traefik.http.routers.whoami-secure.rule=Host(`tbaile.ddns.net`)"
+      - "traefik.http.routers.whoami-secure.entrypoints=websecure"
+      # To avoid hard locks from letsencrypt use the certresolver-staging first, once you're sure that the certificate is from staging 
+      # environment (it's literally written in the generated certificate, check the webpage for more info), change this with the 
+      # official certresolver below, so that traefik can generate a valid certificate for you.
+      - "traefik.http.routers.whoami-secure.tls.certresolver=certresolver-staging"
+      # - "traefik.http.routers.whoami-secure.tls.certresolver=certresolver"
+    # Insert all the networks needed, remember to add traefik otherwise there will be no connection between containers.
+    networks: 
+      - traefik
+
+networks:
+  # The network must be the same defined in the traefik compose
+  traefik:
+    external: true
