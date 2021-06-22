@@ -1,4 +1,4 @@
-version: '3.8'
+version: '3'
 
 # This file is just an example on how another service should be served through traefik.
 services:
